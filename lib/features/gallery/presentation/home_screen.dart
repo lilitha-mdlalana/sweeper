@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../domain/gallery_state.dart';
 import '../domain/media_item.dart';
 import '../domain/swipe_action.dart';
+import '../../deletion/presentation/deletion_providers.dart';
 import 'gallery_providers.dart';
 import 'swipe_card.dart';
 
@@ -25,7 +26,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     Future.microtask(() {
       _sub = ref.read(galleryProvider.notifier).lastSwipeEvents.listen((action) {
-        if (action == SwipeAction.delete) {
+        final justActed = ref.read(galleryProvider).value?.lastActedItem;
+        if (action == SwipeAction.delete && justActed != null) {
+          ref.read(deletionQueueProvider.notifier).add(justActed);
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -35,7 +38,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               action: SnackBarAction(
                 label: 'UNDO',
                 textColor: AppColors.undoLink,
-                onPressed: () => ref.read(galleryProvider.notifier).undo(),
+                onPressed: () {
+                  ref.read(galleryProvider.notifier).undo();
+                  ref.read(deletionQueueProvider.notifier).removeById(justActed.id);
+                },
               ),
             ),
           );
@@ -204,7 +210,14 @@ class _ActionRow extends StatelessWidget {
           onTap: () => ref.read(galleryProvider.notifier).swipe(SwipeAction.delete),
         ),
         IconButton(
-          onPressed: () => ref.read(galleryProvider.notifier).undo(),
+          onPressed: () {
+            final lastItem = ref.read(galleryProvider).value?.lastActedItem;
+            final lastAction = ref.read(galleryProvider).value?.lastAction;
+            ref.read(galleryProvider.notifier).undo();
+            if (lastAction == SwipeAction.delete && lastItem != null) {
+              ref.read(deletionQueueProvider.notifier).removeById(lastItem.id);
+            }
+          },
           icon: const Icon(Icons.undo),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
