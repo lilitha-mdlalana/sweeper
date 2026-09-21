@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../gallery/presentation/gallery_providers.dart';
+import '../../settings/presentation/settings_providers.dart';
+import 'confirm_delete_dialog.dart';
 import 'deletion_providers.dart';
 import 'media_preview_screen.dart';
 
@@ -110,7 +112,9 @@ class ReviewScreen extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: queue.isEmpty ? null : () {},
+                        onPressed: queue.isEmpty
+                            ? null
+                            : () => _handleDeletePermanently(context, ref, queue.length),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accent,
                           minimumSize: const Size(0, 56),
@@ -127,6 +131,28 @@ class ReviewScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _handleDeletePermanently(BuildContext context, WidgetRef ref, int count) async {
+    final confirmBeforeDelete = ref.read(settingsProvider).confirmBeforeDelete;
+    if (confirmBeforeDelete) {
+      final confirmed = await showConfirmDeleteDialog(context, itemCount: count);
+      if (confirmed != true) return;
+    }
+
+    final queue = ref.read(deletionQueueProvider);
+    final repo = ref.read(mediaRepositoryProvider);
+    final result = await repo.deleteMedia(queue.items);
+
+    final notifier = ref.read(deletionQueueProvider.notifier);
+    for (final id in result.deletedIds) {
+      notifier.removeById(id);
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${result.successCount} of ${result.totalCount} deleted')),
     );
   }
 }
