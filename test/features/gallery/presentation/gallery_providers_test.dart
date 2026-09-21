@@ -183,4 +183,20 @@ void main() {
     expect(state.queue.map((e) => e.id).toSet().length, 70);
     expect(state.hasMorePages, false);
   });
+
+  test('swipe(delete) emits a lastSwipeEvents event', () async {
+    final repo = FakeRepository([_item('a')]);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+
+    await container.read(galleryProvider.future);
+    final notifier = container.read(galleryProvider.notifier);
+
+    final future = notifier.lastSwipeEvents.first;
+    await notifier.swipe(SwipeAction.delete);
+
+    expect(await future, SwipeAction.delete);
+  });
 }

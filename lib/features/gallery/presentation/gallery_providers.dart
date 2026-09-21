@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/photo_manager_repository.dart';
 import '../domain/media_repository.dart';
@@ -13,9 +15,12 @@ final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
 
 class GalleryNotifier extends AsyncNotifier<GalleryState> {
   bool _isFetchingMore = false;
+  final _swipeEventsController = StreamController<SwipeAction>.broadcast();
+  Stream<SwipeAction> get lastSwipeEvents => _swipeEventsController.stream;
 
   @override
   Future<GalleryState> build() async {
+    ref.onDispose(_swipeEventsController.close);
     final repo = ref.read(mediaRepositoryProvider);
     final page = await repo.getMedia(page: 0, pageSize: kPageSize, sort: SortOrder.newestFirst);
     return GalleryState.initial().copyWith(
@@ -29,6 +34,7 @@ class GalleryNotifier extends AsyncNotifier<GalleryState> {
     final current = state.value;
     if (current == null || current.currentItem == null) return;
     state = AsyncData(current.advance(item: current.currentItem!, action: action));
+    _swipeEventsController.add(action);
     await loadMoreIfNeeded();
   }
 

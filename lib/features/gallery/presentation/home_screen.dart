@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,11 +10,48 @@ import '../domain/swipe_action.dart';
 import 'gallery_providers.dart';
 import 'swipe_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  StreamSubscription<SwipeAction>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      _sub = ref.read(galleryProvider.notifier).lastSwipeEvents.listen((action) {
+        if (action == SwipeAction.delete) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.snackbarBackground,
+              duration: const Duration(seconds: 4),
+              content: const Text('Photo marked for deletion', style: TextStyle(color: Colors.white)),
+              action: SnackBarAction(
+                label: 'UNDO',
+                textColor: AppColors.undoLink,
+                onPressed: () => ref.read(galleryProvider.notifier).undo(),
+              ),
+            ),
+          );
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final galleryAsync = ref.watch(galleryProvider);
 
     return Scaffold(
