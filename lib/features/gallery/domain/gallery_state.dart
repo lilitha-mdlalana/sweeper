@@ -39,7 +39,7 @@ class GalleryState {
   MediaItem? get currentItem =>
       currentIndex < queue.length ? queue[currentIndex] : null;
 
-  bool get isDone => currentIndex >= queue.length;
+  bool get isDone => currentIndex >= queue.length && !hasMorePages;
 
   int get remaining => queue.length - currentIndex;
 

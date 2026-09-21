@@ -44,11 +44,19 @@ void main() {
     expect(undone.currentIndex, 0);
   });
 
-  test('isDone is true once currentIndex reaches queue length', () {
+  test('isDone is true once currentIndex reaches queue length and no more pages', () {
     final state = GalleryState.initial()
-        .copyWith(queue: [_item('a')])
+        .copyWith(queue: [_item('a')], hasMorePages: false)
         .advance(item: _item('a'), action: SwipeAction.keep);
     expect(state.isDone, isTrue);
+    expect(state.currentItem, isNull);
+  });
+
+  test('isDone is false when currentIndex reaches queue length but more pages exist', () {
+    final state = GalleryState.initial()
+        .copyWith(queue: [_item('a')], hasMorePages: true)
+        .advance(item: _item('a'), action: SwipeAction.keep);
+    expect(state.isDone, isFalse);
     expect(state.currentItem, isNull);
   });
 }
