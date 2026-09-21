@@ -27,21 +27,37 @@ DeleteResult mapDeleteIdsToResult({
   );
 }
 
+/// Builds the native query ordering for [sort].
+///
+/// The ordering has to be pushed down into the MediaStore / PHFetch query
+/// itself: reversing a fetched page client-side would only reverse the newest
+/// 60 assets among themselves, never reaching the genuinely oldest ones.
+FilterOptionGroup filterOptionGroupForSort(SortOrder sort) => FilterOptionGroup(
+      orders: [
+        OrderOption(
+          type: OrderOptionType.createDate,
+          asc: sort == SortOrder.oldestFirst,
+        ),
+      ],
+    );
+
 class PhotoManagerRepository implements MediaRepository {
   final ThumbnailCache _thumbnailCache = ThumbnailCache();
-  AssetPathEntity? _allPhotosPath;
+  final Map<SortOrder, AssetPathEntity> _allPhotosPathBySort = {};
 
-  Future<AssetPathEntity> _getAllPhotosPath() async {
-    if (_allPhotosPath != null) return _allPhotosPath!;
+  Future<AssetPathEntity> _getAllPhotosPath(SortOrder sort) async {
+    final cached = _allPhotosPathBySort[sort];
+    if (cached != null) return cached;
     final paths = await PhotoManager.getAssetPathList(
       type: RequestType.image,
       onlyAll: true,
+      filterOption: filterOptionGroupForSort(sort),
     );
     if (paths.isEmpty) {
       throw StateError('No photo albums available on this device.');
     }
-    _allPhotosPath = paths.first;
-    return _allPhotosPath!;
+    _allPhotosPathBySort[sort] = paths.first;
+    return paths.first;
   }
 
   @override
@@ -50,14 +66,11 @@ class PhotoManagerRepository implements MediaRepository {
     required int pageSize,
     required SortOrder sort,
   }) async {
-    final path = await _getAllPhotosPath();
+    final path = await _getAllPhotosPath(sort);
     final total = await path.assetCountAsync;
     final assets = await path.getAssetListPaged(page: page, size: pageSize);
 
-    var items = assets.map(mapAssetToMediaItem).toList();
-    if (sort == SortOrder.oldestFirst) {
-      items = items.reversed.toList();
-    }
+    final items = assets.map(mapAssetToMediaItem).toList();
 
     final loadedSoFar = (page + 1) * pageSize;
     return MediaPage(items: items, hasMore: loadedSoFar < total);
