@@ -6,13 +6,28 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:sweeper/main.dart';
+import 'package:sweeper/features/settings/presentation/permission_providers.dart';
+
+class _GrantedPermissionNotifier extends PermissionStatusNotifier {
+  @override
+  Future<PermissionState> build() async => PermissionState.granted;
+}
 
 void main() {
   testWidgets('SweepApp shows the bottom nav shell with all tabs',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const SweepApp());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          permissionStatusProvider.overrideWith(_GrantedPermissionNotifier.new),
+        ],
+        child: const SweepApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('Home'), findsWidgets);
     expect(find.text('Review'), findsWidgets);
