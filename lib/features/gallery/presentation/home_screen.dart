@@ -71,6 +71,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Could not load photos: $e')),
           data: (state) {
+            if (state.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('No photos to clean. Your gallery is empty.'),
+                ),
+              );
+            }
             if (state.isDone) {
               return DoneScreen(
                 totalReviewed: state.totalReviewed,
@@ -156,7 +164,7 @@ class _CardStack extends StatelessWidget {
             SwipeCard(
               key: ValueKey(upcoming[0].id),
               onSwiped: (action) => ref.read(galleryProvider.notifier).swipe(action),
-              child: _MediaCard(item: upcoming[0]),
+              child: _MediaCard(item: upcoming[0], isCurrent: true),
             )
           else
             Transform.translate(
@@ -173,7 +181,8 @@ class _CardStack extends StatelessWidget {
 
 class _MediaCard extends ConsumerWidget {
   final MediaItem item;
-  const _MediaCard({required this.item});
+  final bool isCurrent;
+  const _MediaCard({required this.item, this.isCurrent = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -189,6 +198,10 @@ class _MediaCard extends ConsumerWidget {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.data == null) {
+              if (isCurrent) {
+                Future.microtask(
+                    () => ref.read(galleryProvider.notifier).swipe(SwipeAction.skip));
+              }
               return const Center(
                 child: Icon(Icons.image_not_supported_outlined, color: AppColors.textSecondary),
               );

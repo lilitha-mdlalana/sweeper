@@ -41,6 +41,8 @@ class GalleryState {
 
   bool get isDone => currentIndex >= queue.length && !hasMorePages;
 
+  bool get isEmpty => queue.isEmpty && !hasMorePages && !isLoading;
+
   int get remaining => queue.length - currentIndex;
 
   GalleryState copyWith({

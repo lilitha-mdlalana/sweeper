@@ -204,4 +204,15 @@ void main() {
 
     expect(await future, SwipeAction.delete);
   });
+
+  test('a gallery with zero photos reports isEmpty', () async {
+    final repo = FakeRepository([]);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+
+    final state = await container.read(galleryProvider.future);
+    expect(state.isEmpty, isTrue);
+  });
 }
