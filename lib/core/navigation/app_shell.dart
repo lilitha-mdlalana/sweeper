@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/gallery/presentation/home_screen.dart';
+import '../../features/deletion/presentation/review_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -13,7 +14,7 @@ class _AppShellState extends State<AppShell> {
 
   static const _pages = [
     HomeScreen(),
-    Center(key: Key('review-page'), child: Text('Review')),
+    ReviewScreen(),
     Center(key: Key('settings-page'), child: Text('Settings')),
   ];
 
