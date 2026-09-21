@@ -26,5 +26,8 @@ class AppTheme {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
         ),
+        navigationBarTheme: const NavigationBarThemeData(
+          backgroundColor: AppColors.navBackground,
+        ),
       );
 }
