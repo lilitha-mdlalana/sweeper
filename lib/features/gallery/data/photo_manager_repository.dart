@@ -5,6 +5,7 @@ import '../domain/media_item.dart';
 import '../domain/media_page.dart';
 import '../domain/sort_order.dart';
 import '../domain/delete_result.dart';
+import 'thumbnail_cache.dart';
 
 MediaItem mapAssetToMediaItem(AssetEntity asset) => MediaItem(
       id: asset.id,
@@ -27,6 +28,7 @@ DeleteResult mapDeleteIdsToResult({
 }
 
 class PhotoManagerRepository implements MediaRepository {
+  final ThumbnailCache _thumbnailCache = ThumbnailCache();
   AssetPathEntity? _allPhotosPath;
 
   Future<AssetPathEntity> _getAllPhotosPath() async {
@@ -63,9 +65,14 @@ class PhotoManagerRepository implements MediaRepository {
 
   @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async {
+    final cached = _thumbnailCache.get(item.id);
+    if (cached != null) return cached;
+
     final asset = await AssetEntity.fromId(item.id);
     if (asset == null) return null;
-    return asset.thumbnailDataWithSize(ThumbnailSize.square(size));
+    final bytes = await asset.thumbnailDataWithSize(ThumbnailSize.square(size));
+    if (bytes != null) _thumbnailCache.put(item.id, bytes);
+    return bytes;
   }
 
   @override
