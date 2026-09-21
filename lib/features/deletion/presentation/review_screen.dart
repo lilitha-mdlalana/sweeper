@@ -135,7 +135,7 @@ class ReviewScreen extends ConsumerWidget {
   }
 
   Future<void> _handleDeletePermanently(BuildContext context, WidgetRef ref, int count) async {
-    final confirmBeforeDelete = ref.read(settingsProvider).confirmBeforeDelete;
+    final confirmBeforeDelete = ref.read(settingsProvider).value?.confirmBeforeDelete ?? true;
     if (confirmBeforeDelete) {
       final confirmed = await showConfirmDeleteDialog(context, itemCount: count);
       if (confirmed != true) return;

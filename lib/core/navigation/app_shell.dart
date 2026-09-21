@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/gallery/presentation/home_screen.dart';
 import '../../features/deletion/presentation/review_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -19,7 +20,7 @@ class _AppShellState extends State<AppShell> {
     final pages = [
       HomeScreen(onReviewDeletions: _goToReview),
       const ReviewScreen(),
-      const Center(key: Key('settings-page'), child: Text('Settings')),
+      const SettingsScreen(),
     ];
     return Scaffold(
       body: IndexedStack(index: _index, children: pages),

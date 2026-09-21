@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sweeper/features/gallery/domain/media_repository.dart';
 import 'package:sweeper/features/gallery/domain/media_item.dart';
 import 'package:sweeper/features/gallery/domain/media_page.dart';
@@ -45,6 +46,10 @@ class FakeRepository implements MediaRepository {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('HomeScreen shows the remaining count from galleryProvider', (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [mediaRepositoryProvider.overrideWithValue(FakeRepository())],

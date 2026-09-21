@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sweeper/features/gallery/domain/media_repository.dart';
 import 'package:sweeper/features/gallery/domain/media_item.dart';
 import 'package:sweeper/features/gallery/domain/media_page.dart';
@@ -85,6 +86,10 @@ MediaItem _item(String id) => MediaItem(
     );
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   test('galleryProvider loads the first page and swipe advances the queue', () async {
     final repo = FakeRepository([_item('a'), _item('b')]);
     final container = ProviderContainer(overrides: [

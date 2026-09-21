@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sweeper/core/navigation/app_shell.dart';
 import 'package:sweeper/core/theme/app_colors.dart';
 import 'package:sweeper/core/theme/app_theme.dart';
@@ -47,6 +48,10 @@ class _FakeRepository implements MediaRepository {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('AppShell shows Home tab by default and switches to Settings on tap',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
@@ -61,7 +66,7 @@ void main() {
     await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('settings-page')), findsOneWidget);
+    expect(find.byKey(const Key('settings-screen')), findsOneWidget);
   });
 
   testWidgets('AppShell NavigationBar resolves to AppColors.navBackground via AppTheme.light',

@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/photo_manager_repository.dart';
 import '../domain/media_repository.dart';
 import '../domain/gallery_state.dart';
-import '../domain/sort_order.dart';
 import '../domain/swipe_action.dart';
+import '../../settings/presentation/settings_providers.dart';
 
 const int kPageSize = 60;
 
@@ -22,7 +22,8 @@ class GalleryNotifier extends AsyncNotifier<GalleryState> {
   Future<GalleryState> build() async {
     ref.onDispose(_swipeEventsController.close);
     final repo = ref.read(mediaRepositoryProvider);
-    final page = await repo.getMedia(page: 0, pageSize: kPageSize, sort: SortOrder.newestFirst);
+    final settings = await ref.read(settingsProvider.future);
+    final page = await repo.getMedia(page: 0, pageSize: kPageSize, sort: settings.sortOrder);
     return GalleryState.initial().copyWith(
       queue: page.items,
       hasMorePages: page.hasMore,
@@ -54,10 +55,11 @@ class GalleryNotifier extends AsyncNotifier<GalleryState> {
     _isFetchingMore = true;
     try {
       final repo = ref.read(mediaRepositoryProvider);
+      final settings = await ref.read(settingsProvider.future);
       final page = await repo.getMedia(
         page: current.nextPage,
         pageSize: kPageSize,
-        sort: SortOrder.newestFirst,
+        sort: settings.sortOrder,
       );
       final latest = state.value;
       if (latest == null) return;

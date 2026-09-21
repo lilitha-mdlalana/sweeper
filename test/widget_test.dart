@@ -8,6 +8,7 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sweeper/main.dart';
 import 'package:sweeper/features/settings/presentation/permission_providers.dart';
@@ -58,6 +59,10 @@ class _FakeRepository implements MediaRepository {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('SweepApp shows the bottom nav shell with all tabs',
       (WidgetTester tester) async {
     await tester.pumpWidget(
