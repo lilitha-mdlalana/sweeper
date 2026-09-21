@@ -28,7 +28,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      if (!mounted) return;
       _sub = ref.read(galleryProvider.notifier).lastSwipeEvents.listen((action) {
+        if (!mounted) return;
         final justActed = ref.read(galleryProvider).value?.lastActedItem;
         if (action == SwipeAction.delete && justActed != null) {
           ref.read(deletionQueueProvider.notifier).add(justActed);
@@ -37,6 +39,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             SnackBar(
               backgroundColor: AppColors.snackbarBackground,
               duration: const Duration(seconds: 4),
+              // Floating + a bottom margin that clears the ~60px action row
+              // (plus padding/safe area) so the dedicated Delete/Undo/Keep
+              // buttons stay tappable while the snackbar is visible.
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(bottom: 100, left: 12, right: 12),
               content: const Text('Photo marked for deletion', style: TextStyle(color: Colors.white)),
               action: SnackBarAction(
                 label: 'UNDO',
@@ -62,6 +69,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final galleryAsync = ref.watch(galleryProvider);
+
+    ref.listen(galleryProvider, (previous, next) {
+      final error = next.value?.loadError;
+      if (error == null || error == previous?.value?.loadError) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          key: const Key('load-error-snackbar'),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 100, left: 12, right: 12),
+          content: Text(error),
+          action: SnackBarAction(
+            label: 'RETRY',
+            onPressed: () => ref.invalidate(galleryProvider),
+          ),
+        ),
+      );
+    });
 
     return Scaffold(
       key: const Key('home-screen'),
@@ -154,7 +179,14 @@ class _CardStack extends StatelessWidget {
       for (var i = state.currentIndex; i < state.queue.length && i < state.currentIndex + 3; i++)
         state.queue[i],
     ];
-    if (upcoming.isEmpty) return const SizedBox.shrink();
+    if (upcoming.isEmpty) {
+      // The queue is momentarily drained while the next page loads. Show a
+      // spinner rather than a blank, inert card area.
+      return const Center(
+        key: Key('card-stack-loading'),
+        child: CircularProgressIndicator(),
+      );
+    }
 
     return Stack(
       alignment: Alignment.center,
@@ -179,6 +211,21 @@ class _CardStack extends StatelessWidget {
   }
 }
 
+/// Auto-skips a card whose thumbnail resolved to null, but only while that
+/// exact card is still the front card.
+///
+/// The skip runs in a microtask queued during build, so by the time it fires
+/// the user may already have swiped this card away; without this guard the
+/// skip would land on the next, perfectly good photo.
+void autoSkipIfStillCurrent({
+  required GalleryState? state,
+  required MediaItem item,
+  required VoidCallback skip,
+}) {
+  if (state?.currentItem?.id != item.id) return;
+  skip();
+}
+
 class _MediaCard extends ConsumerWidget {
   final MediaItem item;
   final bool isCurrent;
@@ -199,8 +246,12 @@ class _MediaCard extends ConsumerWidget {
             }
             if (snapshot.data == null) {
               if (isCurrent) {
-                Future.microtask(
-                    () => ref.read(galleryProvider.notifier).swipe(SwipeAction.skip));
+                Future.microtask(() => autoSkipIfStillCurrent(
+                      state: ref.read(galleryProvider).value,
+                      item: item,
+                      skip: () =>
+                          ref.read(galleryProvider.notifier).swipe(SwipeAction.skip),
+                    ));
               }
               return const Center(
                 child: Icon(Icons.image_not_supported_outlined, color: AppColors.textSecondary),

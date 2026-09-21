@@ -8,6 +8,7 @@ import 'package:sweeper/features/gallery/domain/media_item.dart';
 import 'package:sweeper/features/gallery/domain/media_page.dart';
 import 'package:sweeper/features/gallery/domain/sort_order.dart';
 import 'package:sweeper/features/gallery/domain/delete_result.dart';
+import 'package:sweeper/features/gallery/domain/gallery_state.dart';
 import 'package:sweeper/features/gallery/presentation/gallery_providers.dart';
 import 'package:sweeper/features/gallery/presentation/home_screen.dart';
 
@@ -115,6 +116,42 @@ class VanishedItemsRepository implements MediaRepository {
       DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
 }
 
+/// First page loads fine, every later page throws (platform/MediaStore error).
+class FailingSecondPageRepository implements MediaRepository {
+  @override
+  Future<MediaPage> getMedia({
+    required int page,
+    required int pageSize,
+    required SortOrder sort,
+  }) async {
+    if (page > 0) throw StateError('media store unavailable');
+    return MediaPage(
+      items: List.generate(
+        3,
+        (i) => MediaItem(
+          id: 'id$i',
+          dateTaken: DateTime(2024, 1, 1),
+          sizeBytes: 1000,
+          width: 100,
+          height: 100,
+        ),
+      ),
+      hasMore: true,
+    );
+  }
+
+  @override
+  Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async =>
+      _fakeThumbnailBytes;
+
+  @override
+  Future<Uint8List?> getOriginalBytes(MediaItem item) async => null;
+
+  @override
+  Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
+      DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -158,5 +195,99 @@ void main() {
     // and lands on the Done screen rather than hanging on a placeholder.
     expect(find.text('No photos to clean. Your gallery is empty.'), findsNothing);
     expect(find.textContaining('remaining'), findsNothing);
+  });
+
+  testWidgets('the undo snackbar does not cover the Delete/Undo/Keep action row',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [mediaRepositoryProvider.overrideWithValue(FakeRepository())],
+      child: MaterialApp(home: HomeScreen(onReviewDeletions: () {})),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    // The snackbar is showing...
+    expect(find.text('Photo marked for deletion'), findsOneWidget);
+
+    // ...and all three dedicated action controls are still hit-testable,
+    // per the spec's "Undo works regardless of snackbar visibility".
+    expect(find.widgetWithText(ElevatedButton, 'Delete').hitTestable(), findsOneWidget);
+    expect(find.widgetWithText(ElevatedButton, 'Keep').hitTestable(), findsOneWidget);
+    expect(find.byIcon(Icons.undo).hitTestable(), findsOneWidget);
+
+    // And tapping Delete again while the snackbar is up really does register.
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('1'), findsOneWidget); // 3 - 2 swipes = 1 remaining
+  });
+
+  testWidgets('a failed page fetch surfaces an error snackbar instead of a blank screen',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        mediaRepositoryProvider.overrideWithValue(FailingSecondPageRepository()),
+      ],
+      child: MaterialApp(home: HomeScreen(onReviewDeletions: () {})),
+    ));
+    await tester.pumpAndSettle();
+
+    // Swipe through the whole first page; the second page fetch throws.
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Keep'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.textContaining('Could not load more photos'), findsOneWidget);
+    // The session ends on the Done screen rather than a blank, inert card area.
+    expect(find.byKey(const Key('card-stack-loading')), findsNothing);
+    expect(find.text("You're done."), findsOneWidget);
+  });
+
+  group('autoSkipIfStillCurrent', () {
+    final item = MediaItem(
+      id: 'a',
+      dateTaken: DateTime(2024, 1, 1),
+      sizeBytes: 1,
+      width: 1,
+      height: 1,
+    );
+    final other = MediaItem(
+      id: 'b',
+      dateTaken: DateTime(2024, 1, 2),
+      sizeBytes: 1,
+      width: 1,
+      height: 1,
+    );
+
+    GalleryState stateWith(List<MediaItem> queue, int index) =>
+        GalleryState.initial().copyWith(queue: queue, currentIndex: index);
+
+    test('skips when the item is still the front card', () {
+      var skipped = false;
+      autoSkipIfStillCurrent(
+        state: stateWith([item, other], 0),
+        item: item,
+        skip: () => skipped = true,
+      );
+      expect(skipped, isTrue);
+    });
+
+    test('does not skip once the user has swiped that item away', () {
+      var skipped = false;
+      autoSkipIfStillCurrent(
+        state: stateWith([item, other], 1),
+        item: item,
+        skip: () => skipped = true,
+      );
+      expect(skipped, isFalse);
+    });
+
+    test('does not skip when there is no state yet', () {
+      var skipped = false;
+      autoSkipIfStillCurrent(state: null, item: item, skip: () => skipped = true);
+      expect(skipped, isFalse);
+    });
   });
 }
