@@ -12,6 +12,10 @@ class GalleryState {
   final bool hasMorePages;
   final int nextPage;
 
+  /// Non-null when a background page fetch failed. The UI surfaces this to the
+  /// user instead of dead-ending on a blank screen.
+  final String? loadError;
+
   const GalleryState({
     required this.queue,
     required this.currentIndex,
@@ -22,6 +26,7 @@ class GalleryState {
     required this.isLoading,
     required this.hasMorePages,
     required this.nextPage,
+    this.loadError,
   });
 
   factory GalleryState.initial() => const GalleryState(
@@ -34,6 +39,7 @@ class GalleryState {
         isLoading: false,
         hasMorePages: true,
         nextPage: 0,
+        loadError: null,
       );
 
   MediaItem? get currentItem =>
@@ -55,7 +61,9 @@ class GalleryState {
     bool? isLoading,
     bool? hasMorePages,
     int? nextPage,
+    String? loadError,
     bool clearLastAction = false,
+    bool clearLoadError = false,
   }) {
     return GalleryState(
       queue: queue ?? this.queue,
@@ -67,6 +75,7 @@ class GalleryState {
       isLoading: isLoading ?? this.isLoading,
       hasMorePages: hasMorePages ?? this.hasMorePages,
       nextPage: nextPage ?? this.nextPage,
+      loadError: clearLoadError ? null : (loadError ?? this.loadError),
     );
   }
 

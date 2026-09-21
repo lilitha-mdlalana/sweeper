@@ -77,6 +77,36 @@ class DelayedFakeRepository implements MediaRepository {
       DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
 }
 
+/// A repository whose first page succeeds but every later page throws,
+/// simulating a MediaStore / platform failure mid-session.
+class FailingSecondPageRepository implements MediaRepository {
+  final List<MediaItem> allItems;
+  FailingSecondPageRepository(this.allItems);
+
+  @override
+  Future<MediaPage> getMedia({
+    required int page,
+    required int pageSize,
+    required SortOrder sort,
+  }) async {
+    if (page >= 1) {
+      throw StateError('media store unavailable');
+    }
+    final end = pageSize.clamp(0, allItems.length);
+    return MediaPage(items: allItems.sublist(0, end), hasMore: end < allItems.length);
+  }
+
+  @override
+  Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => null;
+
+  @override
+  Future<Uint8List?> getOriginalBytes(MediaItem item) async => null;
+
+  @override
+  Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
+      DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
+}
+
 MediaItem _item(String id) => MediaItem(
       id: id,
       dateTaken: DateTime(2024, 1, 1),
@@ -203,6 +233,65 @@ void main() {
     await notifier.swipe(SwipeAction.delete);
 
     expect(await future, SwipeAction.delete);
+  });
+
+  test(
+      'swipe still emits after ref.invalidate ("Start again") and existing listeners survive',
+      () async {
+    final repo = FakeRepository([_item('a'), _item('b')]);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+
+    await container.read(galleryProvider.future);
+
+    // A long-lived listener, like HomeScreen's, subscribed before the restart.
+    final received = <SwipeAction>[];
+    final sub =
+        container.read(galleryProvider.notifier).lastSwipeEvents.listen(received.add);
+    addTearDown(sub.cancel);
+
+    await container.read(galleryProvider.notifier).swipe(SwipeAction.delete);
+
+    // "Start again" — Riverpod reuses the same notifier instance here.
+    container.invalidate(galleryProvider);
+    await container.read(galleryProvider.future);
+
+    // Previously this threw "Cannot add new events after calling close".
+    await container.read(galleryProvider.notifier).swipe(SwipeAction.delete);
+    await container.read(galleryProvider.notifier).swipe(SwipeAction.keep);
+
+    // Allow the broadcast events to be delivered.
+    await Future<void>.delayed(Duration.zero);
+
+    expect(received, [SwipeAction.delete, SwipeAction.delete, SwipeAction.keep]);
+  });
+
+  test('a failed page fetch does not crash and settles into a renderable state',
+      () async {
+    final items = List.generate(70, (i) => _item('item$i'));
+    final repo = FailingSecondPageRepository(items);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+
+    await container.read(galleryProvider.future);
+    final notifier = container.read(galleryProvider.notifier);
+
+    // Swipe far enough to trigger the (failing) second page fetch.
+    for (var i = 0; i < 60; i++) {
+      await notifier.swipe(SwipeAction.keep);
+    }
+
+    final state = container.read(galleryProvider).value!;
+    expect(state.loadError, isNotNull);
+    expect(state.hasMorePages, isFalse);
+    // Not blank: the queue is exhausted and pagination stopped, so the UI can
+    // render the Done screen instead of an empty, inert card area.
+    expect(state.isDone, isTrue);
+    expect(state.currentItem, isNull);
   });
 
   test('a gallery with zero photos reports isEmpty', () async {
