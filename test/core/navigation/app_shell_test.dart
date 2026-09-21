@@ -12,6 +12,7 @@ import 'package:sweeper/features/gallery/domain/media_page.dart';
 import 'package:sweeper/features/gallery/domain/media_repository.dart';
 import 'package:sweeper/features/gallery/domain/sort_order.dart';
 import 'package:sweeper/features/gallery/presentation/gallery_providers.dart';
+import 'package:sweeper/features/deletion/presentation/deletion_providers.dart';
 
 class _FakeRepository implements MediaRepository {
   @override
@@ -83,5 +84,23 @@ void main() {
     final resolvedBackgroundColor = NavigationBarTheme.of(context).backgroundColor;
 
     expect(resolvedBackgroundColor, AppColors.navBackground);
+  });
+
+  testWidgets('Review tab shows a badge with the deletion queue count', (tester) async {
+    final container = ProviderContainer(
+      overrides: [mediaRepositoryProvider.overrideWithValue(_FakeRepository())],
+    );
+    addTearDown(container.dispose);
+    container.read(deletionQueueProvider.notifier).add(
+      MediaItem(id: 'a', dateTaken: DateTime(2024, 1, 1), sizeBytes: 1, width: 1, height: 1),
+    );
+
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: const MaterialApp(home: AppShell()),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1'), findsWidgets);
   });
 }
