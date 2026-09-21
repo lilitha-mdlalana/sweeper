@@ -12,6 +12,8 @@ final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
 });
 
 class GalleryNotifier extends AsyncNotifier<GalleryState> {
+  bool _isFetchingMore = false;
+
   @override
   Future<GalleryState> build() async {
     final repo = ref.read(mediaRepositoryProvider);
@@ -37,23 +39,30 @@ class GalleryNotifier extends AsyncNotifier<GalleryState> {
   }
 
   Future<void> loadMoreIfNeeded() async {
+    if (_isFetchingMore) return;
+
     final current = state.value;
     if (current == null || !current.hasMorePages) return;
     if (current.remaining > 10) return;
 
-    final repo = ref.read(mediaRepositoryProvider);
-    final page = await repo.getMedia(
-      page: current.nextPage,
-      pageSize: kPageSize,
-      sort: SortOrder.newestFirst,
-    );
-    final latest = state.value;
-    if (latest == null) return;
-    state = AsyncData(latest.copyWith(
-      queue: [...latest.queue, ...page.items],
-      hasMorePages: page.hasMore,
-      nextPage: latest.nextPage + 1,
-    ));
+    _isFetchingMore = true;
+    try {
+      final repo = ref.read(mediaRepositoryProvider);
+      final page = await repo.getMedia(
+        page: current.nextPage,
+        pageSize: kPageSize,
+        sort: SortOrder.newestFirst,
+      );
+      final latest = state.value;
+      if (latest == null) return;
+      state = AsyncData(latest.copyWith(
+        queue: [...latest.queue, ...page.items],
+        hasMorePages: page.hasMore,
+        nextPage: latest.nextPage + 1,
+      ));
+    } finally {
+      _isFetchingMore = false;
+    }
   }
 }
 
