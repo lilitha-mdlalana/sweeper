@@ -27,4 +27,11 @@ void main() {
     final queue = const DeletionQueue().add(_item('a')).clear();
     expect(queue.isEmpty, isTrue);
   });
+
+  test('add is a no-op when an item with the same id is already queued', () {
+    final queue = const DeletionQueue().add(_item('a')).add(_item('a'));
+
+    expect(queue.length, 1);
+    expect(queue.items.single.id, 'a');
+  });
 }

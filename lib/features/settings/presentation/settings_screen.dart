@@ -78,10 +78,11 @@ class SettingsScreen extends ConsumerWidget {
                     .push(MaterialPageRoute(builder: (_) => const PrivacyScreen())),
               ),
               const Divider(height: 1, color: AppColors.rowDivider),
+              // No About destination exists, so no chevron: the row must not
+              // promise navigation it doesn't have.
               const ListTile(
                 title: Text('About Sweep'),
                 subtitle: Text('A private gallery cleaner'),
-                trailing: Icon(Icons.chevron_right),
               ),
             ]),
           ],

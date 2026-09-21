@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../gallery/domain/delete_result.dart';
 import '../../gallery/presentation/gallery_providers.dart';
 import '../../settings/presentation/settings_providers.dart';
 import 'confirm_delete_dialog.dart';
@@ -143,7 +144,23 @@ class ReviewScreen extends ConsumerWidget {
 
     final queue = ref.read(deletionQueueProvider);
     final repo = ref.read(mediaRepositoryProvider);
-    final result = await repo.deleteMedia(queue.items);
+
+    final DeleteResult result;
+    try {
+      result = await repo.deleteMedia(queue.items);
+    } catch (_) {
+      // The platform delete can fail (app backgrounded mid system dialog,
+      // MediaStore error). The queue is left intact, which is safe — the user
+      // just needs to be told nothing was removed.
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          key: Key('delete-failed-snackbar'),
+          content: Text('Deletion failed. Nothing was removed.'),
+        ),
+      );
+      return;
+    }
 
     final notifier = ref.read(deletionQueueProvider.notifier);
     for (final id in result.deletedIds) {
