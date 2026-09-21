@@ -8,11 +8,14 @@ import '../domain/gallery_state.dart';
 import '../domain/media_item.dart';
 import '../domain/swipe_action.dart';
 import '../../deletion/presentation/deletion_providers.dart';
+import 'done_screen.dart';
 import 'gallery_providers.dart';
 import 'swipe_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback onReviewDeletions;
+
+  const HomeScreen({super.key, required this.onReviewDeletions});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -69,7 +72,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           error: (e, _) => Center(child: Text('Could not load photos: $e')),
           data: (state) {
             if (state.isDone) {
-              return const Center(child: Text("You're done."));
+              return DoneScreen(
+                totalReviewed: state.totalReviewed,
+                totalMarkedForDeletion: state.totalMarkedForDeletion,
+                onReviewDeletions: widget.onReviewDeletions,
+                onStartAgain: () => ref.invalidate(galleryProvider),
+              );
             }
             return Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),

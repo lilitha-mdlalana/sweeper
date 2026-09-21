@@ -12,16 +12,17 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
-  static const _pages = [
-    HomeScreen(),
-    ReviewScreen(),
-    Center(key: Key('settings-page'), child: Text('Settings')),
-  ];
+  void _goToReview() => setState(() => _index = 1);
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      HomeScreen(onReviewDeletions: _goToReview),
+      const ReviewScreen(),
+      const Center(key: Key('settings-page'), child: Text('Settings')),
+    ];
     return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
+      body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

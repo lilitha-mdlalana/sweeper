@@ -48,7 +48,7 @@ void main() {
   testWidgets('HomeScreen shows the remaining count from galleryProvider', (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [mediaRepositoryProvider.overrideWithValue(FakeRepository())],
-      child: const MaterialApp(home: HomeScreen()),
+      child: MaterialApp(home: HomeScreen(onReviewDeletions: () {})),
     ));
 
     await tester.pumpAndSettle();
