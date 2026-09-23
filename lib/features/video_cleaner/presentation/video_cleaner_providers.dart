@@ -7,7 +7,7 @@ import '../domain/video_queue_state.dart';
 
 const int kVideoPageSize = 40;
 
-class VideoQueueNotifier extends AsyncNotifier<VideoQueueState> {
+class VideoQueueNotifier extends AutoDisposeAsyncNotifier<VideoQueueState> {
   bool _isFetchingMore = false;
 
   @override
@@ -22,36 +22,55 @@ class VideoQueueNotifier extends AsyncNotifier<VideoQueueState> {
     );
   }
 
-  void decide(String id, VideoDecision decision) {
-    final current = state.value;
-    if (current == null) return;
-    MediaItem? item;
-    for (final i in current.items) {
-      if (i.id == id) {
-        item = i;
-        break;
-      }
+  MediaItem? _findItem(VideoQueueState state, String id) {
+    for (final i in state.items) {
+      if (i.id == id) return i;
     }
-    if (item == null) return;
+    return null;
+  }
 
-    state = AsyncData(current.decide(id, decision));
-
-    if (decision == VideoDecision.delete) {
-      ref.read(deletionQueueProvider.notifier).add(item);
+  /// Adds/removes [item] from the shared deletion queue based on the actual
+  /// before/after transition, rather than assuming the new decision alone
+  /// (or which decision happened most recently) tells us what to do — that
+  /// assumption breaks the moment a delete is changed to keep, redecided, or
+  /// undone out of order.
+  void _syncDeletionQueue(MediaItem item, {required VideoDecision before, required VideoDecision after}) {
+    if (before == after) return;
+    final queue = ref.read(deletionQueueProvider.notifier);
+    if (after == VideoDecision.delete) {
+      queue.add(item);
+    } else if (before == VideoDecision.delete) {
+      queue.removeById(item.id);
     }
   }
 
-  void undo() {
+  void decide(String id, VideoDecision decision) {
     final current = state.value;
-    if (current == null || current.history.isEmpty) return;
-    final last = current.history.last;
-    final wasDelete = current.decisions[last.id] == VideoDecision.delete;
+    if (current == null) return;
+    final item = _findItem(current, id);
+    if (item == null) return;
 
-    state = AsyncData(current.undo());
+    final before = current.decisionFor(id);
+    state = AsyncData(current.decide(id, decision));
+    _syncDeletionQueue(item, before: before, after: decision);
+  }
 
-    if (wasDelete) {
-      ref.read(deletionQueueProvider.notifier).removeById(last.id);
-    }
+  /// Undoes the most recent decision made on [id] specifically — scoped so a
+  /// snackbar's UNDO always reverses the decision it was shown for, even if
+  /// the user has since decided a different video.
+  void undoFor(String id) {
+    final current = state.value;
+    if (current == null) return;
+    final item = _findItem(current, id);
+    if (item == null) return;
+
+    final entryIndex = current.history.lastIndexWhere((e) => e.id == id);
+    if (entryIndex == -1) return;
+
+    final before = current.decisionFor(id);
+    final after = current.history[entryIndex].previous;
+    state = AsyncData(current.undoById(id));
+    _syncDeletionQueue(item, before: before, after: after);
   }
 
   void setCurrentPage(int index) {
@@ -104,6 +123,11 @@ class VideoQueueNotifier extends AsyncNotifier<VideoQueueState> {
   }
 }
 
-final videoQueueProvider = AsyncNotifierProvider<VideoQueueNotifier, VideoQueueState>(
+/// autoDispose: VideoCleanerScreen is pushed/popped via Navigator (it never
+/// stays mounted the way the photo tab does inside AppShell's IndexedStack),
+/// so each visit is intentionally a fresh session — a stale position or
+/// stale decisions from a previous visit, or from videos the Review tab
+/// since removed/restored/deleted, are never carried forward.
+final videoQueueProvider = AutoDisposeAsyncNotifierProvider<VideoQueueNotifier, VideoQueueState>(
   VideoQueueNotifier.new,
 );

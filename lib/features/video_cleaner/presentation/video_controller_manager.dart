@@ -24,6 +24,8 @@ List<String> neighborIds(List<MediaItem> items, int currentIndex) {
 class VideoControllerManager {
   final MediaRepository repo;
   final _cache = <String, VideoPlayerController>{};
+  final _inFlight = <String, Future<VideoPlayerController?>>{};
+  bool _disposed = false;
 
   VideoControllerManager(this.repo);
 
@@ -31,19 +33,53 @@ class VideoControllerManager {
 
   Iterable<String> get cachedIds => _cache.keys;
 
+  /// Fetches/initializes the controller for [item], reusing any cached or
+  /// already-in-flight request for the same id so two overlapping calls
+  /// (e.g. two page-settle passes racing on a fast swipe) never construct
+  /// two controllers for one item — the second would otherwise silently
+  /// overwrite the cache entry and leak the first, never-disposed one.
   Future<VideoPlayerController?> ensureController(MediaItem item) async {
-    final existing = _cache[item.id];
-    if (existing != null) return existing;
+    if (_disposed) return null;
 
-    final file = await repo.getVideoFile(item);
-    if (file == null) return null;
+    final cached = _cache[item.id];
+    if (cached != null) return cached;
 
-    final controller = VideoPlayerController.file(file);
-    await controller.initialize();
-    await controller.setLooping(false);
-    await controller.setVolume(0);
-    _cache[item.id] = controller;
-    return controller;
+    final pending = _inFlight[item.id];
+    if (pending != null) return pending;
+
+    final future = _createController(item);
+    _inFlight[item.id] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlight.remove(item.id);
+    }
+  }
+
+  Future<VideoPlayerController?> _createController(MediaItem item) async {
+    try {
+      final file = await repo.getVideoFile(item);
+      if (file == null || _disposed) return null;
+
+      final controller = VideoPlayerController.file(file);
+      await controller.initialize();
+      if (_disposed) {
+        // disposeAll() ran while this fetch was in flight — don't let a
+        // controller into a dead manager's cache; it would never be
+        // disposed and could still be played.
+        await controller.dispose();
+        return null;
+      }
+      await controller.setLooping(false);
+      await controller.setVolume(0);
+      _cache[item.id] = controller;
+      return controller;
+    } catch (_) {
+      // A codec/corrupt-file/init failure must not leak whatever partial
+      // controller state was created, nor strand the caller on a never-
+      // completing future.
+      return null;
+    }
   }
 
   void trimTo(List<String> keepIds) {
@@ -63,6 +99,7 @@ class VideoControllerManager {
   }
 
   void disposeAll() {
+    _disposed = true;
     for (final c in _cache.values) {
       c.dispose();
     }

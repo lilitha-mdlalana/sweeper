@@ -62,11 +62,11 @@ void main() {
     expect(afterDelete.history.last.previous, VideoDecision.keep);
   });
 
-  test('undo restores the previous decision and pops history', () {
+  test('undoById restores the previous decision and pops that history entry', () {
     final state = VideoQueueState.initial().copyWith(items: [_video('a')]);
     final decided = state.decide('a', VideoDecision.delete);
 
-    final undone = decided.undo();
+    final undone = decided.undoById('a');
 
     expect(undone.decisions['a'], VideoDecision.undecided);
     expect(undone.history, isEmpty);
@@ -74,9 +74,30 @@ void main() {
     expect(undone.storageToReclaimBytes, 0);
   });
 
-  test('undo on empty history is a no-op', () {
+  test('undoById restores only the specified item, leaving other history intact', () {
+    final state = VideoQueueState.initial().copyWith(items: [_video('a'), _video('b')]);
+    final decided = state.decide('a', VideoDecision.delete).decide('b', VideoDecision.keep);
+
+    final undone = decided.undoById('a');
+
+    expect(undone.decisions['a'], VideoDecision.undecided);
+    expect(undone.decisions['b'], VideoDecision.keep);
+    expect(undone.history.map((e) => e.id), ['b']);
+  });
+
+  test('undoById is a no-op when the id has no history entry', () {
     final state = VideoQueueState.initial().copyWith(items: [_video('a')]);
-    final undone = state.undo();
+    final decided = state.decide('a', VideoDecision.keep);
+
+    final undone = decided.undoById('nonexistent');
+
+    expect(undone.decisions['a'], VideoDecision.keep);
+    expect(undone.history.length, 1);
+  });
+
+  test('undoById on empty history is a no-op', () {
+    final state = VideoQueueState.initial().copyWith(items: [_video('a')]);
+    final undone = state.undoById('a');
     expect(undone.decisions, isEmpty);
   });
 

@@ -105,12 +105,17 @@ class VideoQueueState {
     return copyWith(decisions: {...decisions, id: VideoDecision.keep});
   }
 
-  VideoQueueState undo() {
-    if (history.isEmpty) return this;
-    final last = history.last;
+  /// Restores [id]'s most recent decision to what it was before, scoped to
+  /// that specific item so an in-between decision on a different video (e.g.
+  /// paging on and tapping Keep there) is never the one undone by mistake.
+  VideoQueueState undoById(String id) {
+    final idx = history.lastIndexWhere((e) => e.id == id);
+    if (idx == -1) return this;
+    final entry = history[idx];
+    final newHistory = [...history]..removeAt(idx);
     return copyWith(
-      decisions: {...decisions, last.id: last.previous},
-      history: history.sublist(0, history.length - 1),
+      decisions: {...decisions, id: entry.previous},
+      history: newHistory,
     );
   }
 }

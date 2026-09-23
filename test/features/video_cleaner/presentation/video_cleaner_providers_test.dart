@@ -72,6 +72,7 @@ void main() {
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     final state = await container.read(videoQueueProvider.future);
     expect(state.items.map((i) => i.id).toList(), ['a', 'b']);
@@ -84,6 +85,7 @@ void main() {
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     await container.read(videoQueueProvider.future);
     container.read(videoQueueProvider.notifier).decide('a', VideoDecision.delete);
@@ -98,6 +100,7 @@ void main() {
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     await container.read(videoQueueProvider.future);
     container.read(videoQueueProvider.notifier).decide('a', VideoDecision.keep);
@@ -105,19 +108,84 @@ void main() {
     expect(container.read(deletionQueueProvider).isEmpty, isTrue);
   });
 
-  test('undo after a delete removes the item from the deletion queue', () async {
+  test('undoFor after a delete removes the item from the deletion queue', () async {
     final repo = FakeVideoRepository([_video('a')]);
     final container = ProviderContainer(overrides: [
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     await container.read(videoQueueProvider.future);
     container.read(videoQueueProvider.notifier).decide('a', VideoDecision.delete);
-    container.read(videoQueueProvider.notifier).undo();
+    container.read(videoQueueProvider.notifier).undoFor('a');
 
     expect(container.read(deletionQueueProvider).isEmpty, isTrue);
     expect(container.read(videoQueueProvider).value!.markedForDeletionCount, 0);
+  });
+
+  test('changing a delete decision to keep removes the item from the deletion queue', () async {
+    final repo = FakeVideoRepository([_video('a', sizeBytes: 5000), _video('b')]);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
+
+    await container.read(videoQueueProvider.future);
+    final notifier = container.read(videoQueueProvider.notifier);
+    notifier.decide('a', VideoDecision.delete);
+    expect(container.read(deletionQueueProvider).items.map((i) => i.id), ['a']);
+
+    notifier.decide('a', VideoDecision.keep);
+
+    expect(container.read(deletionQueueProvider).isEmpty, isTrue);
+    expect(container.read(videoQueueProvider).value!.markedForDeletionCount, 0);
+    expect(container.read(videoQueueProvider).value!.storageToReclaimBytes, 0);
+  });
+
+  test('undoFor targets the id it was called with, not the most recent decision on any video',
+      () async {
+    final repo = FakeVideoRepository([_video('a'), _video('b')]);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
+
+    await container.read(videoQueueProvider.future);
+    final notifier = container.read(videoQueueProvider.notifier);
+
+    notifier.decide('a', VideoDecision.delete);
+    notifier.decide('b', VideoDecision.keep); // a later, unrelated decision on a different video
+
+    notifier.undoFor('a'); // scoped: must undo a's delete, not b's keep
+
+    final state = container.read(videoQueueProvider).value!;
+    expect(state.decisions['a'], VideoDecision.undecided);
+    expect(state.decisions['b'], VideoDecision.keep);
+    expect(container.read(deletionQueueProvider).isEmpty, isTrue);
+  });
+
+  test('deciding delete twice then undoing once leaves the item marked and still queued',
+      () async {
+    final repo = FakeVideoRepository([_video('a')]);
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(repo),
+    ]);
+    addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
+
+    await container.read(videoQueueProvider.future);
+    final notifier = container.read(videoQueueProvider.notifier);
+
+    notifier.decide('a', VideoDecision.delete);
+    notifier.decide('a', VideoDecision.delete); // re-tapping Delete on an already-deleted item
+    notifier.undoFor('a'); // pops only the second, redundant history entry
+
+    final state = container.read(videoQueueProvider).value!;
+    expect(state.decisions['a'], VideoDecision.delete);
+    expect(container.read(deletionQueueProvider).items.map((i) => i.id), ['a']);
   });
 
   test('setCurrentPage records an implicit keep for the page being left if undecided', () async {
@@ -126,6 +194,7 @@ void main() {
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     await container.read(videoQueueProvider.future);
     container.read(videoQueueProvider.notifier).setCurrentPage(1);
@@ -142,6 +211,7 @@ void main() {
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     await container.read(videoQueueProvider.future);
     container.read(videoQueueProvider.notifier).decide('a', VideoDecision.delete);
@@ -157,6 +227,7 @@ void main() {
       mediaRepositoryProvider.overrideWithValue(repo),
     ]);
     addTearDown(container.dispose);
+    container.listen(videoQueueProvider, (_, _) {}); // keep the autoDispose provider alive for the test
 
     await container.read(videoQueueProvider.future);
     var state = container.read(videoQueueProvider).value!;

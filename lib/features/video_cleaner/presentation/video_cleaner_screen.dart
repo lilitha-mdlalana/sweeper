@@ -26,6 +26,7 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
   late final VideoControllerManager _controllerManager;
   int? _lastHandledPageIndex;
   bool _wasAtEnd = false;
+  int _settleGeneration = 0;
 
   @override
   void initState() {
@@ -56,6 +57,12 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
   Future<void> _handlePageSettled(VideoQueueState state) async {
     if (_lastHandledPageIndex == state.currentPageIndex) return;
     _lastHandledPageIndex = state.currentPageIndex;
+    // A fast swipe can start a second settle pass before this one's awaits
+    // resolve. The generation token lets a superseded pass detect that and
+    // skip its own play()/setState — otherwise it can resume after a newer
+    // pass already paused everything else and silently keep the old video
+    // playing off-screen.
+    final myGeneration = ++_settleGeneration;
 
     for (final id in _controllerManager.cachedIds) {
       if (id != state.currentItem?.id) {
@@ -63,11 +70,25 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
       }
     }
     await _controllerManager.preloadNeighbors(state.items, state.currentPageIndex);
+
+    if (myGeneration != _settleGeneration) {
+      // Superseded. Re-trim to the latest known window so this pass's
+      // late-arriving neighbor fetches don't linger outside it; the newer
+      // pass owns play()/setState from here.
+      final latest = ref.read(videoQueueProvider).value;
+      if (latest != null) {
+        _controllerManager.trimTo(neighborIds(latest.items, latest.currentPageIndex));
+      }
+      return;
+    }
+    if (!mounted) return;
+
     final current = state.currentItem;
     if (current != null) {
       await _controllerManager.controllerFor(current.id)?.play();
     }
-    if (mounted) setState(() {});
+    if (myGeneration != _settleGeneration || !mounted) return;
+    setState(() {});
 
     if (state.isAtEnd && !_wasAtEnd) {
       HapticFeedback.mediumImpact();
@@ -99,7 +120,7 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
           action: SnackBarAction(
             label: 'UNDO',
             textColor: AppColors.undoLink,
-            onPressed: () => ref.read(videoQueueProvider.notifier).undo(),
+            onPressed: () => ref.read(videoQueueProvider.notifier).undoFor(current.id),
           ),
         ),
       );
@@ -153,6 +174,20 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
                 onReviewDeletions: widget.onReviewDeletions,
                 onDone: () => Navigator.of(context).pop(),
               );
+            }
+            // The PageView is torn down while the end screen is showing (and
+            // rebuilt from scratch, always at page 0, if the user undoes back
+            // into an incomplete session). Resync it to the real position
+            // once it reattaches, rather than leaving the visible page out of
+            // step with state.currentPageIndex.
+            if (_pageController.hasClients &&
+                _pageController.page != null &&
+                _pageController.page!.round() != state.currentPageIndex) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_pageController.hasClients) {
+                  _pageController.jumpToPage(state.currentPageIndex);
+                }
+              });
             }
             return Column(
               children: [
