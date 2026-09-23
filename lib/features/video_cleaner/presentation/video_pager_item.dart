@@ -1,5 +1,5 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
@@ -84,7 +84,6 @@ class _VideoPagerItemState extends ConsumerState<VideoPagerItem> {
       _dragDx = 0;
     });
     if (dx <= -kDeleteSwipeThreshold) {
-      HapticFeedback.mediumImpact();
       widget.onDelete();
     }
   }

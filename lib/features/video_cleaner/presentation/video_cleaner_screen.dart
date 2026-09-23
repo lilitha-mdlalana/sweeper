@@ -80,7 +80,9 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
     final current = state?.currentItem;
     if (current == null) return;
 
-    HapticFeedback.lightImpact();
+    decision == VideoDecision.delete
+        ? HapticFeedback.mediumImpact()
+        : HapticFeedback.lightImpact();
     ref.read(videoQueueProvider.notifier).decide(current.id, decision);
 
     if (decision == VideoDecision.delete && mounted) {
