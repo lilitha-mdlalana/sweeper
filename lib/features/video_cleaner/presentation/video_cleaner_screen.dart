@@ -83,6 +83,26 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
     HapticFeedback.lightImpact();
     ref.read(videoQueueProvider.notifier).decide(current.id, decision);
 
+    if (decision == VideoDecision.delete && mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.snackbarBackground,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          // Clears VideoPagerItem's Delete/Keep row (positioned at bottom: 100
+          // with its own height) so both buttons stay tappable while it's up.
+          margin: const EdgeInsets.only(bottom: 170, left: 12, right: 12),
+          content: const Text('Video marked for deletion', style: TextStyle(color: Colors.white)),
+          action: SnackBarAction(
+            label: 'UNDO',
+            textColor: AppColors.undoLink,
+            onPressed: () => ref.read(videoQueueProvider.notifier).undo(),
+          ),
+        ),
+      );
+    }
+
     if (_pageController.hasClients && state!.currentPageIndex < state.items.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 250),

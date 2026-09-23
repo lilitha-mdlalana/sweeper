@@ -11,6 +11,7 @@ import 'package:sweeper/features/gallery/domain/sort_order.dart';
 import 'package:sweeper/features/gallery/domain/delete_result.dart';
 import 'package:sweeper/features/gallery/presentation/gallery_providers.dart';
 import 'package:sweeper/features/deletion/presentation/deletion_providers.dart';
+import 'package:sweeper/features/video_cleaner/presentation/video_cleaner_providers.dart';
 import 'package:sweeper/features/video_cleaner/presentation/video_cleaner_screen.dart';
 
 /// Returns null for both the thumbnail and the playback file, so the pager
@@ -114,6 +115,32 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(container.read(deletionQueueProvider).isEmpty, isTrue);
+  });
+
+  testWidgets('tapping Delete shows an UNDO snackbar that reverses the decision', (tester) async {
+    final container = ProviderContainer(overrides: [
+      mediaRepositoryProvider.overrideWithValue(FakeVideoOnlyRepository([_video('a'), _video('b')])),
+    ]);
+    addTearDown(container.dispose);
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(home: VideoCleanerScreen(onReviewDeletions: () {})),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Video marked for deletion'), findsOneWidget);
+    expect(container.read(deletionQueueProvider).items.map((i) => i.id), ['a']);
+
+    await tester.tap(find.text('UNDO'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(deletionQueueProvider).isEmpty, isTrue);
+    expect(container.read(videoQueueProvider).value!.markedForDeletionCount, 0);
   });
 
   testWidgets('reviewing every video shows the end-of-session screen with correct totals',
