@@ -8,6 +8,7 @@ import '../domain/gallery_state.dart';
 import '../domain/media_item.dart';
 import '../domain/swipe_action.dart';
 import '../../deletion/presentation/deletion_providers.dart';
+import '../../video_cleaner/presentation/video_cleaner_screen.dart';
 import 'done_screen.dart';
 import 'gallery_providers.dart';
 import 'swipe_card.dart';
@@ -137,9 +138,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ),
-                      Text('${state.totalMarkedForDeletion} to delete',
-                          style: AppTextStyles.body(
-                              size: 14, weight: FontWeight.w600, color: AppColors.accent)),
+                      Row(
+                        children: [
+                          Text('${state.totalMarkedForDeletion} to delete',
+                              style: AppTextStyles.body(
+                                  size: 14, weight: FontWeight.w600, color: AppColors.accent)),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            key: const Key('open-video-cleaner'),
+                            icon: const Icon(Icons.video_camera_back_outlined),
+                            tooltip: 'Clean videos',
+                            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => VideoCleanerScreen(
+                                onReviewDeletions: () {
+                                  Navigator.of(context).pop();
+                                  widget.onReviewDeletions();
+                                },
+                              ),
+                            )),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),

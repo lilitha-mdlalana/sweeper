@@ -29,6 +29,8 @@ class VideoControllerManager {
 
   VideoPlayerController? controllerFor(String id) => _cache[id];
 
+  Iterable<String> get cachedIds => _cache.keys;
+
   Future<VideoPlayerController?> ensureController(MediaItem item) async {
     final existing = _cache[item.id];
     if (existing != null) return existing;
