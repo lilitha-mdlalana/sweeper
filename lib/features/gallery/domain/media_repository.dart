@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'media_item.dart';
 import 'media_page.dart';
@@ -11,9 +12,20 @@ abstract class MediaRepository {
     required SortOrder sort,
   });
 
+  Future<MediaPage> getVideoMedia({
+    required int page,
+    required int pageSize,
+    required SortOrder sort,
+  });
+
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300});
 
   Future<Uint8List?> getOriginalBytes(MediaItem item);
+
+  /// A playback-ready [File] for [item], used by video playback instead of
+  /// [getOriginalBytes] — loading a whole video into memory is unacceptable
+  /// at GB scale.
+  Future<File?> getVideoFile(MediaItem item);
 
   Future<DeleteResult> deleteMedia(List<MediaItem> items);
 }

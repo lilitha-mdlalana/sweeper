@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 import '../domain/media_repository.dart';
@@ -14,6 +15,8 @@ MediaItem mapAssetToMediaItem(AssetEntity asset) => MediaItem(
       width: asset.width,
       height: asset.height,
       type: asset.type == AssetType.video ? MediaType.video : MediaType.photo,
+      // asset.duration is seconds; 0 for photos.
+      durationMs: asset.duration * 1000,
     );
 
 DeleteResult mapDeleteIdsToResult({
@@ -43,30 +46,31 @@ FilterOptionGroup filterOptionGroupForSort(SortOrder sort) => FilterOptionGroup(
 
 class PhotoManagerRepository implements MediaRepository {
   final ThumbnailCache _thumbnailCache = ThumbnailCache();
-  final Map<SortOrder, AssetPathEntity> _allPhotosPathBySort = {};
+  final Map<(SortOrder, RequestType), AssetPathEntity> _allMediaPathByKey = {};
 
-  Future<AssetPathEntity> _getAllPhotosPath(SortOrder sort) async {
-    final cached = _allPhotosPathBySort[sort];
+  Future<AssetPathEntity> _getAllMediaPath(SortOrder sort, RequestType type) async {
+    final key = (sort, type);
+    final cached = _allMediaPathByKey[key];
     if (cached != null) return cached;
     final paths = await PhotoManager.getAssetPathList(
-      type: RequestType.image,
+      type: type,
       onlyAll: true,
       filterOption: filterOptionGroupForSort(sort),
     );
     if (paths.isEmpty) {
-      throw StateError('No photo albums available on this device.');
+      throw StateError('No media albums available on this device.');
     }
-    _allPhotosPathBySort[sort] = paths.first;
+    _allMediaPathByKey[key] = paths.first;
     return paths.first;
   }
 
-  @override
-  Future<MediaPage> getMedia({
+  Future<MediaPage> _getMediaPage({
     required int page,
     required int pageSize,
     required SortOrder sort,
+    required RequestType type,
   }) async {
-    final path = await _getAllPhotosPath(sort);
+    final path = await _getAllMediaPath(sort, type);
     final total = await path.assetCountAsync;
     final assets = await path.getAssetListPaged(page: page, size: pageSize);
 
@@ -74,6 +78,28 @@ class PhotoManagerRepository implements MediaRepository {
 
     final loadedSoFar = (page + 1) * pageSize;
     return MediaPage(items: items, hasMore: loadedSoFar < total);
+  }
+
+  @override
+  Future<MediaPage> getMedia({
+    required int page,
+    required int pageSize,
+    required SortOrder sort,
+  }) =>
+      _getMediaPage(page: page, pageSize: pageSize, sort: sort, type: RequestType.image);
+
+  @override
+  Future<MediaPage> getVideoMedia({
+    required int page,
+    required int pageSize,
+    required SortOrder sort,
+  }) =>
+      _getMediaPage(page: page, pageSize: pageSize, sort: sort, type: RequestType.video);
+
+  @override
+  Future<File?> getVideoFile(MediaItem item) async {
+    final asset = await AssetEntity.fromId(item.id);
+    return asset?.file;
   }
 
   @override

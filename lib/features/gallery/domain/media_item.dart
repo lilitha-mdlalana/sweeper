@@ -7,6 +7,7 @@ class MediaItem {
   final int width;
   final int height;
   final MediaType type;
+  final int durationMs;
 
   MediaItem({
     required this.id,
@@ -15,5 +16,6 @@ class MediaItem {
     required this.width,
     required this.height,
     this.type = MediaType.photo,
+    this.durationMs = 0,
   });
 }

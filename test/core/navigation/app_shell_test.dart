@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,10 +39,21 @@ class _FakeRepository implements MediaRepository {
   }
 
   @override
+  Future<MediaPage> getVideoMedia({
+    required int page,
+    required int pageSize,
+    required SortOrder sort,
+  }) async =>
+      MediaPage(items: [], hasMore: false);
+
+  @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => null;
 
   @override
   Future<Uint8List?> getOriginalBytes(MediaItem item) async => null;
+
+  @override
+  Future<File?> getVideoFile(MediaItem item) async => null;
 
   @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>

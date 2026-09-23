@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,9 +19,14 @@ class NullThumbRepository implements MediaRepository {
   Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort}) async =>
       MediaPage(items: [], hasMore: false);
   @override
+  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+      MediaPage(items: [], hasMore: false);
+  @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => null;
   @override
   Future<Uint8List?> getOriginalBytes(MediaItem item) async => null;
+  @override
+  Future<File?> getVideoFile(MediaItem item) async => null;
   @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
       DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
@@ -33,9 +39,14 @@ class ThrowingDeleteRepository implements MediaRepository {
   Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort}) async =>
       MediaPage(items: [], hasMore: false);
   @override
+  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+      MediaPage(items: [], hasMore: false);
+  @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => null;
   @override
   Future<Uint8List?> getOriginalBytes(MediaItem item) async => null;
+  @override
+  Future<File?> getVideoFile(MediaItem item) async => null;
   @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
       throw PlatformException(code: 'delete_failed');
