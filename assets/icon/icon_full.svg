@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#1B1A17"/>
+
+  <!-- photo card, folded top-right corner, centered on canvas -->
+  <g transform="rotate(-9 512 512)">
+    <rect x="222" y="222" width="580" height="580" rx="100" fill="#C93E17"/>
+    <circle cx="392" cy="502" r="104" fill="#F5F3EE"/>
+    <path d="M682 222 L802 222 L802 342 Z" fill="#E7714F"/>
+  </g>
+</svg>
