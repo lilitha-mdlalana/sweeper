@@ -1,6 +1,6 @@
 {
-    "name": "sweeper",
-    "short_name": "sweeper",
+    "name": "Sweeper",
+    "short_name": "Sweeper",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

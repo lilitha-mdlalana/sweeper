@@ -1,4 +1,4 @@
-package com.example.sweeper
+package com.totalgeek.sweeper
 
 import io.flutter.embedding.android.FlutterActivity
 
