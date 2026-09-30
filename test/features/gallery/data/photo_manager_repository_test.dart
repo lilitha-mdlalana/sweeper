@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -256,7 +258,14 @@ void main() {
       expect(store.recordedTypes, everyElement(1));
     });
 
-    test('getVideoFile resolves the asset file from photo_manager', () async {
+    test(
+      'getVideoFile resolves the asset file from photo_manager',
+      // AssetEntity.getFile asserts on its platform before ever touching the
+      // (mocked) method channel — photo_manager only recognizes iOS/macOS/
+      // Android/OHOS as supported, so this always throws on Linux (our CI
+      // runner) regardless of mocking.
+      skip: !(Platform.isIOS || Platform.isMacOS || Platform.isAndroid),
+      () async {
       final store = _FakeMixedMediaStore(photoCount: 0, videoCount: 1);
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(_channel, store.handle);
