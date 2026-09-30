@@ -21,6 +21,7 @@ class _FakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     if (page > 0) return MediaPage(items: [], hasMore: false);
     return MediaPage(
@@ -43,6 +44,7 @@ class _FakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 

@@ -10,12 +10,14 @@ abstract class MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   });
 
   Future<MediaPage> getVideoMedia({
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   });
 
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300});

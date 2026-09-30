@@ -31,6 +31,7 @@ class FakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     if (page > 0) return MediaPage(items: [], hasMore: false);
     return MediaPage(
@@ -53,6 +54,7 @@ class FakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -77,6 +79,7 @@ class EmptyRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -85,6 +88,7 @@ class EmptyRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -111,6 +115,7 @@ class VanishedItemsRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     if (page > 0) return MediaPage(items: [], hasMore: false);
     return MediaPage(
@@ -133,6 +138,7 @@ class VanishedItemsRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -157,6 +163,7 @@ class FailingSecondPageRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     if (page > 0) throw StateError('media store unavailable');
     return MediaPage(
@@ -179,6 +186,7 @@ class FailingSecondPageRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 

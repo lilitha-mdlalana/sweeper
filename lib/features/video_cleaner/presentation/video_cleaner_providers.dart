@@ -14,7 +14,12 @@ class VideoQueueNotifier extends AutoDisposeAsyncNotifier<VideoQueueState> {
   Future<VideoQueueState> build() async {
     final repo = ref.read(mediaRepositoryProvider);
     final settings = await ref.read(settingsProvider.future);
-    final page = await repo.getVideoMedia(page: 0, pageSize: kVideoPageSize, sort: settings.sortOrder);
+    final page = await repo.getVideoMedia(
+      page: 0,
+      pageSize: kVideoPageSize,
+      sort: settings.sortOrder,
+      albumName: settings.selectedAlbumName,
+    );
     return VideoQueueState.initial().copyWith(
       items: page.items,
       hasMorePages: page.hasMore,
@@ -101,6 +106,7 @@ class VideoQueueNotifier extends AutoDisposeAsyncNotifier<VideoQueueState> {
         page: current.nextPage,
         pageSize: kVideoPageSize,
         sort: settings.sortOrder,
+        albumName: settings.selectedAlbumName,
       );
       final latest = state.value;
       if (latest == null) return;

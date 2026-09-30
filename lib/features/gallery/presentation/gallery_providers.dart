@@ -38,7 +38,12 @@ class GalleryNotifier extends AsyncNotifier<GalleryState> {
   Future<GalleryState> build() async {
     final repo = ref.read(mediaRepositoryProvider);
     final settings = await ref.read(settingsProvider.future);
-    final page = await repo.getMedia(page: 0, pageSize: kPageSize, sort: settings.sortOrder);
+    final page = await repo.getMedia(
+      page: 0,
+      pageSize: kPageSize,
+      sort: settings.sortOrder,
+      albumName: settings.selectedAlbumName,
+    );
     return GalleryState.initial().copyWith(
       queue: page.items,
       hasMorePages: page.hasMore,
@@ -75,6 +80,7 @@ class GalleryNotifier extends AsyncNotifier<GalleryState> {
         page: current.nextPage,
         pageSize: kPageSize,
         sort: settings.sortOrder,
+        albumName: settings.selectedAlbumName,
       );
       final latest = state.value;
       if (latest == null) return;

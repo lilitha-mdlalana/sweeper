@@ -22,6 +22,7 @@ class FakeVideoRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -30,6 +31,7 @@ class FakeVideoRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     final start = page * pageSize;
     if (start >= allVideos.length) return MediaPage(items: [], hasMore: false);

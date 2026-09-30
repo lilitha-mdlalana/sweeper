@@ -16,10 +16,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class NullThumbRepository implements MediaRepository {
   @override
-  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override
-  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => null;
@@ -36,10 +36,10 @@ class NullThumbRepository implements MediaRepository {
 /// backgrounded mid system-delete-dialog).
 class ThrowingDeleteRepository implements MediaRepository {
   @override
-  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override
-  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => null;

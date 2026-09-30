@@ -19,10 +19,10 @@ class OneByOnePngRepository implements MediaRepository {
   ]);
 
   @override
-  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override
-  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override
   Future<Uint8List?> getThumbnail(MediaItem item, {int size = 300}) async => _onePixelPng;

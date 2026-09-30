@@ -22,11 +22,11 @@ class FakeVideoOnlyRepository implements MediaRepository {
   FakeVideoOnlyRepository(this.videos);
 
   @override
-  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort}) async =>
+  Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
 
   @override
-  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort}) async {
+  Future<MediaPage> getVideoMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async {
     if (page > 0) return MediaPage(items: [], hasMore: false);
     return MediaPage(items: videos, hasMore: false);
   }

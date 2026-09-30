@@ -5,6 +5,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../gallery/domain/sort_order.dart';
 import 'settings_providers.dart';
 import 'privacy_screen.dart';
+import 'album_picker_sheet.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -26,7 +27,23 @@ class SettingsScreen extends ConsumerWidget {
             _SectionLabel('Cleaning'),
             const SizedBox(height: 8),
             _Card(children: [
-              _Row(label: 'Media type', trailing: _Badge('Photos')),
+              InkWell(
+                onTap: () => showAlbumPickerSheet(context),
+                child: _Row(
+                  label: 'Album',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 140),
+                        child: _Badge(settings?.selectedAlbumName ?? 'All Photos & Videos'),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
               const Divider(height: 1, color: AppColors.rowDivider),
               _Row(
                 label: 'Sort order',
@@ -151,7 +168,12 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(color: AppColors.textPrimary, borderRadius: BorderRadius.circular(16)),
-        child: Text(label, style: AppTextStyles.body(size: 13, weight: FontWeight.w600, color: Colors.white)),
+        child: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          style: AppTextStyles.body(size: 13, weight: FontWeight.w600, color: Colors.white),
+        ),
       );
 }
 
@@ -173,6 +195,11 @@ class _SortToggle extends StatelessWidget {
         selected: current == SortOrder.oldestFirst,
         onTap: () => onChanged(SortOrder.oldestFirst),
       ),
+      _SortButton(
+        label: 'Random',
+        selected: current == SortOrder.random,
+        onTap: () => onChanged(SortOrder.random),
+      ),
     ]);
   }
 }
@@ -189,8 +216,11 @@ class _SortButton extends StatelessWidget {
         style: TextButton.styleFrom(
           backgroundColor: selected ? AppColors.textPrimary : Colors.transparent,
           foregroundColor: selected ? Colors.white : AppColors.textPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
       );
 }
 

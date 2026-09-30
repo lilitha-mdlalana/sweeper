@@ -21,6 +21,7 @@ class FakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     final start = page * pageSize;
     if (start >= allItems.length) return MediaPage(items: [], hasMore: false);
@@ -33,6 +34,7 @@ class FakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -65,6 +67,7 @@ class DelayedFakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     if (page >= 1) {
       getMediaCallCountForPage1Plus++;
@@ -83,6 +86,7 @@ class DelayedFakeRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 
@@ -111,6 +115,7 @@ class FailingSecondPageRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async {
     if (page >= 1) {
       throw StateError('media store unavailable');
@@ -124,6 +129,7 @@ class FailingSecondPageRepository implements MediaRepository {
     required int page,
     required int pageSize,
     required SortOrder sort,
+    String? albumName,
   }) async =>
       MediaPage(items: [], hasMore: false);
 

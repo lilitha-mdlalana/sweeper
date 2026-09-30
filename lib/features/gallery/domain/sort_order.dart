@@ -1,1 +1,1 @@
-enum SortOrder { newestFirst, oldestFirst }
+enum SortOrder { newestFirst, oldestFirst, random }
