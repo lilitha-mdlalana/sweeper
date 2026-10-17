@@ -30,6 +30,9 @@ class OneByOnePngRepository implements MediaRepository {
   Future<Uint8List?> getOriginalBytes(MediaItem item) async => _onePixelPng;
   @override
   Future<File?> getVideoFile(MediaItem item) async => null;
+
+  @override
+  Future<File?> getShareableFile(MediaItem item) async => null;
   @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
       DeleteResult(deletedIds: [], failedIds: []);

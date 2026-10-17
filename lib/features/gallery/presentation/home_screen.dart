@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/share_media.dart';
 import '../domain/gallery_state.dart';
 import '../domain/media_item.dart';
 import '../domain/swipe_action.dart';
@@ -299,6 +300,20 @@ class _ActionRow extends StatelessWidget {
           background: AppColors.accent,
           foreground: Colors.white,
           onTap: () => ref.read(galleryProvider.notifier).swipe(SwipeAction.delete),
+        ),
+        Builder(
+          builder: (context) => IconButton(
+            onPressed: () {
+              final item = ref.read(galleryProvider).value?.currentItem;
+              if (item == null) return;
+              shareMediaItem(context, ref.read(mediaRepositoryProvider), item);
+            },
+            icon: const Icon(Icons.ios_share),
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              side: const BorderSide(color: AppColors.borderStrong),
+            ),
+          ),
         ),
         IconButton(
           onPressed: () {

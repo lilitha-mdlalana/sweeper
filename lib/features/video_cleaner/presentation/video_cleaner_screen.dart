@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/format_bytes.dart';
+import '../../../core/utils/share_media.dart';
 import '../../gallery/presentation/gallery_providers.dart';
 import '../domain/video_queue_state.dart';
 import 'video_cleaner_providers.dart';
@@ -221,12 +222,12 @@ class _VideoCleanerScreenState extends ConsumerState<VideoCleanerScreen>
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final VideoQueueState state;
   const _Header({required this.state});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Row(
@@ -247,6 +248,19 @@ class _Header extends StatelessWidget {
               const SizedBox(width: 4),
               Text(formatBytes(state.storageToReclaimBytes),
                   style: AppTextStyles.body(size: 13, weight: FontWeight.w600, color: AppColors.undoLink)),
+              const SizedBox(width: 4),
+              IconButton(
+                key: const Key('share-current-video'),
+                onPressed: () {
+                  final item = state.currentItem;
+                  if (item == null) return;
+                  shareMediaItem(context, ref.read(mediaRepositoryProvider), item);
+                },
+                icon: const Icon(Icons.ios_share, size: 18, color: Colors.white70),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ],
           ),
         ],

@@ -20,6 +20,24 @@ MediaItem mapAssetToMediaItem(AssetEntity asset) => MediaItem(
       durationMs: asset.duration * 1000,
     );
 
+String _extensionForMimeType(String? mimeType) {
+  switch (mimeType) {
+    case 'image/png':
+      return 'png';
+    case 'image/heic':
+      return 'heic';
+    case 'image/heif':
+      return 'heif';
+    case 'image/gif':
+      return 'gif';
+    case 'image/webp':
+      return 'webp';
+    case 'image/jpeg':
+    default:
+      return 'jpg';
+  }
+}
+
 DeleteResult mapDeleteIdsToResult({
   required List<String> requestedIds,
   required List<String> deletedIds,
@@ -184,6 +202,22 @@ class PhotoManagerRepository implements MediaRepository {
   Future<File?> getVideoFile(MediaItem item) async {
     final asset = await AssetEntity.fromId(item.id);
     return asset?.file;
+  }
+
+  @override
+  Future<File?> getShareableFile(MediaItem item) async {
+    if (item.type == MediaType.video) return getVideoFile(item);
+
+    final asset = await AssetEntity.fromId(item.id);
+    if (asset == null) return null;
+    final bytes = await asset.originBytes;
+    if (bytes == null) return null;
+
+    final mimeType = await asset.mimeTypeAsync;
+    final dir = await Directory.systemTemp.createTemp('sweeper_share_');
+    final file = File('${dir.path}/${item.id}.${_extensionForMimeType(mimeType)}');
+    await file.writeAsBytes(bytes);
+    return file;
   }
 
   @override

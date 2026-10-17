@@ -48,6 +48,9 @@ class FakeRepository implements MediaRepository {
   Future<File?> getVideoFile(MediaItem item) async => null;
 
   @override
+  Future<File?> getShareableFile(MediaItem item) async => null;
+
+  @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
       DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
 }
@@ -100,6 +103,9 @@ class DelayedFakeRepository implements MediaRepository {
   Future<File?> getVideoFile(MediaItem item) async => null;
 
   @override
+  Future<File?> getShareableFile(MediaItem item) async => null;
+
+  @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>
       DeleteResult(deletedIds: items.map((i) => i.id).toList(), failedIds: []);
 }
@@ -141,6 +147,9 @@ class FailingSecondPageRepository implements MediaRepository {
 
   @override
   Future<File?> getVideoFile(MediaItem item) async => null;
+
+  @override
+  Future<File?> getShareableFile(MediaItem item) async => null;
 
   @override
   Future<DeleteResult> deleteMedia(List<MediaItem> items) async =>

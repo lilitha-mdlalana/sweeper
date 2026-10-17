@@ -29,5 +29,10 @@ abstract class MediaRepository {
   /// at GB scale.
   Future<File?> getVideoFile(MediaItem item);
 
+  /// A [File] suitable for handing to the platform share sheet: the video
+  /// file itself for videos, or the original photo bytes written to a temp
+  /// file (with an extension matching its real mime type) for photos.
+  Future<File?> getShareableFile(MediaItem item);
+
   Future<DeleteResult> deleteMedia(List<MediaItem> items);
 }

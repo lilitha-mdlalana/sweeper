@@ -26,6 +26,9 @@ class _CountingRepository implements MediaRepository {
   }
 
   @override
+  Future<File?> getShareableFile(MediaItem item) async => null;
+
+  @override
   Future<MediaPage> getMedia({required int page, required int pageSize, required SortOrder sort, String? albumName}) async =>
       MediaPage(items: [], hasMore: false);
   @override

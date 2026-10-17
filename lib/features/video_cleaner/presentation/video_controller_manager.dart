@@ -71,7 +71,6 @@ class VideoControllerManager {
         return null;
       }
       await controller.setLooping(false);
-      await controller.setVolume(0);
       _cache[item.id] = controller;
       return controller;
     } catch (_) {
